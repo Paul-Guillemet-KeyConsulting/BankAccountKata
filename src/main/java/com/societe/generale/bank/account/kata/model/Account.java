@@ -27,4 +27,8 @@ public class Account {
 	public List<Operation> operations() {
 		return operations;
 	}
+	
+	public void modifyBalance(Float newBalance) {
+		balance = newBalance;
+	}
 }

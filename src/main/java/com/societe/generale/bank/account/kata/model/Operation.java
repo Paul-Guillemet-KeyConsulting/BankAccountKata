@@ -2,6 +2,7 @@ package com.societe.generale.bank.account.kata.model;
 
 import java.util.Date;
 
+import com.societe.generale.bank.account.kata.exception.InsufficientFundsException;
 import com.societe.generale.bank.account.kata.exception.InvalidOperationException;
 
 public class Operation {
@@ -39,5 +40,23 @@ public class Operation {
 	
 	public Float newBalance() {
 		return newBalance;
+	}
+	
+	public void execute() throws InsufficientFundsException {
+		int multiplier = type.equals(OperationType.DEPOSIT) ? 1 : -1;
+		Float nextBalance = this.targetAccount().balance() + multiplier * this.amount();
+		if(nextBalance < 0) {
+			throw new InsufficientFundsException(
+					String.format(
+							"Trying to withdraw %.2f but current account balance is only %.2f",
+							amount,
+							this.targetAccount().balance()
+						)
+					);
+		}
+		this.targetAccount().modifyBalance(nextBalance);
+		this.newBalance = nextBalance;
+		this.date = new Date();
+		this.targetAccount().operations().add(this);
 	}
 }
