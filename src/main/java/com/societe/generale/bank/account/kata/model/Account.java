@@ -3,6 +3,9 @@ package com.societe.generale.bank.account.kata.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.societe.generale.bank.account.kata.exception.InsufficientFundsException;
+import com.societe.generale.bank.account.kata.exception.InvalidOperationException;
+
 
 public class Account {
 	private Client owner;
@@ -30,5 +33,13 @@ public class Account {
 	
 	public void modifyBalance(Float newBalance) {
 		balance = newBalance;
+	}
+	
+	public void deposit(Float amount) throws InsufficientFundsException, InvalidOperationException {
+		new Operation(this, amount, OperationType.DEPOSIT).execute();
+	}
+	
+	public void withdraw(Float amount) throws InsufficientFundsException, InvalidOperationException {
+		new Operation(this, amount, OperationType.WITHDRAWAL).execute();
 	}
 }
