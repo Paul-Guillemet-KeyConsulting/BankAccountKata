@@ -2,143 +2,159 @@ package com.societe.generale.bank.account.kata.model;
 
 import static org.mockito.Mockito.never;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import com.societe.generale.bank.account.kata.exception.InsufficientFundsException;
-import com.societe.generale.bank.account.kata.exception.InvalidOperationException;
+import static org.assertj.core.api.Assertions.*;
 
 public class OperationTest {
 
 	private final String INVAL_OP_MSG = "Trying to create an invalid operation";
-	private Client client = new Client("Paul", "Guillemet");
-	private Account account = new Account(client);
+	private Client client = new Client();
+	
 
 	// Operation creation
 	@Test
-	public void operationInstanciationNullType() {
-		try {
-			new Operation(account, 500f, null);
-			Assert.fail("Should have triggered InvalidOperationException");
-		}
-		catch(Exception e) {
-			Assert.assertTrue(e instanceof InvalidOperationException);
-			Assert.assertEquals(INVAL_OP_MSG,e.getMessage());
-		}
+	public void shouldFailWhenTryingToInstanciateWithNullType() throws InvalidAmountException {
+		Account account = new Account(client);
+		
+		assertThatThrownBy(() -> {
+			new Operation(account, new Amount(new BigDecimal(500)), null);
+		})
+			.isInstanceOf(InvalidOperationException.class)
+			.hasMessage(INVAL_OP_MSG);
 	}
 	
 	@Test
-	public void operationInstanciationNullAccount() {
-		try {
-			new Operation(null, 500f, OperationType.DEPOSIT);
-			Assert.fail("Should have triggered InvalidOperationException");
-		}
-		catch(Exception e) {
-			Assert.assertTrue(e instanceof InvalidOperationException);
-			Assert.assertEquals(INVAL_OP_MSG,e.getMessage());
-		}
+	public void shouldFailWhenTryingToInstanciateWithNullAccount() throws InvalidAmountException {
+		
+		assertThatThrownBy(() -> {
+			new Operation(null, new Amount(new BigDecimal(500)), OperationType.DEPOSIT);
+		})
+			.isInstanceOf(InvalidOperationException.class)
+			.hasMessage(INVAL_OP_MSG);
 	}
 	
 	@Test
-	public void operationInstanciationNullAmount() {
-		try {
+	public void shouldFailWhenTryingToInstanciateWithNullAmount() throws InvalidAmountException {
+		Account account = new Account(client);
+		
+		assertThatThrownBy(() -> {
 			new Operation(account, null, OperationType.DEPOSIT);
-			Assert.fail("Should have triggered InvalidOperationException");
-		}
-		catch(Exception e) {
-			Assert.assertTrue(e instanceof InvalidOperationException);
-			Assert.assertEquals(INVAL_OP_MSG,e.getMessage());
-		}
+		})
+			.isInstanceOf(InvalidOperationException.class)
+			.hasMessage(INVAL_OP_MSG);
 	}
 	
 	@Test
-	public void operationInstanciationNegativeAmount() {
-		try {
-			new Operation(account, -1f, OperationType.DEPOSIT);
-			Assert.fail("Should have triggered InvalidOperationException");
-		}
-		catch(Exception e) {
-			Assert.assertTrue(e instanceof InvalidOperationException);
-			Assert.assertEquals(INVAL_OP_MSG,e.getMessage());
-		}
+	public void shouldFailWhenTryingToInstanciateWithNegativeAmount() throws InvalidAmountException {
+		Account account = new Account(client);
+		
+		assertThatThrownBy(() -> {
+			new Operation(account, new Amount(new BigDecimal(-1)), OperationType.DEPOSIT);
+		})
+			.isInstanceOf(InvalidOperationException.class)
+			.hasMessage(INVAL_OP_MSG);
 	}
 	
 	@Test
-	public void operationInstanciationValid() throws InvalidOperationException {
-		Operation op = new Operation(account, 20f, OperationType.DEPOSIT);
+	public void shouldHaveCorrectAttributesWhenInstanciatedWhitValidArgs() throws InvalidOperationException, InvalidAmountException {
+		Account account = new Account(client);
+		
+		Operation op = new Operation(account, new Amount(new BigDecimal(20)), OperationType.DEPOSIT);
+		
 		Assert.assertEquals(account, op.targetAccount());
-		Assert.assertEquals(Float.valueOf(20), op.amount());
+		Assert.assertEquals(new BigDecimal(20), op.amount().value());
 		Assert.assertEquals(OperationType.DEPOSIT, op.type());
 	}
 	
-	// Operation execution
+		// Operation execution
 		@Test
-		public void operationDepositExecution() throws InvalidOperationException, InsufficientFundsException {
+		public void shouldUpdateAccountAndCompleteOwnAttributesWhenDepositIsExecuted() throws InvalidOperationException, InsufficientFundsException, InvalidAmountException {
 			Account account = Mockito.mock(Account.class);
 			ArrayList<Operation> history = new ArrayList<>();
-			
 			Mockito.when(account.balance())
-				.thenReturn(500f);
+				.thenReturn(new Amount(new BigDecimal(500)));
 			Mockito.when(account.operations())
 				.thenReturn(history);
 
-			Operation op = new Operation(account, 20f, OperationType.DEPOSIT);
+			Operation op = new Operation(account, new Amount(new BigDecimal(20)), OperationType.DEPOSIT);
 			op.execute();
 			
-			Assert.assertEquals(Float.valueOf(520f), op.newBalance());
+			Assert.assertEquals(new BigDecimal(520), op.newBalance().value());
 			Assert.assertEquals(history.get(0), op);
 			Assert.assertNotNull(op.date());
-			Mockito.verify(account).modifyBalance(520f);
+			Mockito.verify(account).increaseBalance(Mockito.any(Amount.class));
 			
 		}
 		
 		@Test
-		public void operationWithdrawalExecution() throws InvalidOperationException, InsufficientFundsException {
+		public void shouldUpdateAccountAndCompleteOwnAttributesWhenWithdrawalIsExecuted() throws InvalidOperationException, InsufficientFundsException, InvalidAmountException {
 			Account account = Mockito.mock(Account.class);
 			ArrayList<Operation> history = new ArrayList<>();
-			
 			Mockito.when(account.balance())
-				.thenReturn(500f);
+				.thenReturn(new Amount(new BigDecimal(500)));
 			Mockito.when(account.operations())
 				.thenReturn(history);
 
-			Operation op = new Operation(account, 20f, OperationType.WITHDRAWAL);
+			Operation op = new Operation(account, new Amount(new BigDecimal(20)), OperationType.WITHDRAWAL);
 			op.execute();
 			
-			Assert.assertEquals(Float.valueOf(480f), op.newBalance());
+			Assert.assertEquals(new BigDecimal(480), op.newBalance().value());
 			Assert.assertEquals(history.get(0), op);
 			Assert.assertNotNull(op.date());
-			Mockito.verify(account).modifyBalance(480f);
+			Mockito.verify(account).decreaseBalance(Mockito.any(Amount.class));
 		}
 		
 		@Test
-		public void operationWithdrawalExecutionInsufficientFunds() throws InvalidOperationException, InsufficientFundsException {
+		public void shouldFailWhenWithdrawalExecutionWithInsufficientFunds() throws InvalidOperationException, InsufficientFundsException, InvalidAmountException {
 			Account account = Mockito.mock(Account.class);
 			ArrayList<Operation> history = new ArrayList<>();
-			
 			Mockito.when(account.balance())
-				.thenReturn(500f);
+				.thenReturn(new Amount(new BigDecimal(500)));
 			Mockito.when(account.operations())
 				.thenReturn(history);
-
-			Operation op = new Operation(account, 550f, OperationType.WITHDRAWAL);
-			try {
+			Operation op = new Operation(account, new Amount(new BigDecimal(550)), OperationType.WITHDRAWAL);
+			
+			assertThatThrownBy(() -> {
 				op.execute();
-				Assert.fail("Should have triggered InsufficientFundsException");
-			}
-			catch(Exception e) {
-				Assert.assertTrue(e instanceof InsufficientFundsException);
-				Assert.assertEquals(
-						"Trying to withdraw 550,00 but current account balance is only 500,00",
-						e.getMessage()
-						);
-				Mockito.verify(account, never()).modifyBalance(Mockito.any());
-				Assert.assertTrue(history.isEmpty());
-			}
+			})
+				.isInstanceOf(InsufficientFundsException.class)
+				.hasMessage("Trying to withdraw 550 but current account balance is only 500");
+			Mockito.verify(account, never()).decreaseBalance(Mockito.any());
+			Assert.assertTrue(history.isEmpty());
 		}
-	
+		
+		@Test
+		public void shouldMatchExpectationsWhenUnexecutedOpConvertedToString() throws InvalidOperationException, InsufficientFundsException, InvalidAmountException {
+			Account account = Mockito.mock(Account.class);
+			
+			Operation op = new Operation(account, new Amount(new BigDecimal(550)), OperationType.WITHDRAWAL);
+			
+			Assert.assertEquals("NOT YET EXECUTED | WITHDRAWAL | 550 |", op.toString());
+		}
+		
+		@Test
+		public void shouldMatchExpectationsWhenExecutedOpConvertedToString() throws InvalidOperationException, InsufficientFundsException, InvalidAmountException {
+			Account account = Mockito.mock(Account.class);
+			ArrayList<Operation> history = new ArrayList<>();
+			Mockito.when(account.balance())
+				.thenReturn(new Amount(new BigDecimal(500)));
+			Mockito.when(account.operations())
+				.thenReturn(history);
+			
+			Operation op = new Operation(account, new Amount(new BigDecimal(550)), OperationType.DEPOSIT);
+			op.execute();
+			
+			Assert.assertEquals(
+					String.format("%s | DEPOSIT | 550 | 1050", new Date().toString()),
+					op.toString());
+		}
+			
 
 }

@@ -2,19 +2,16 @@ package com.societe.generale.bank.account.kata.model;
 
 import java.util.Date;
 
-import com.societe.generale.bank.account.kata.exception.InsufficientFundsException;
-import com.societe.generale.bank.account.kata.exception.InvalidOperationException;
-
 public class Operation {
 	private Account targetAccount;
-	private Float amount;
+	private Amount amount;
 	private Date date;
 	private OperationType type;
-	private Float newBalance;
+	private Amount newBalance;
 	
-	public Operation(Account targetAccount, Float amount, OperationType type) throws InvalidOperationException {
+	public Operation(Account targetAccount, Amount amount, OperationType type) throws InvalidOperationException {
 		super();
-		if(targetAccount == null || amount == null || type == null || amount <= 0) {
+		if(targetAccount == null || amount == null || type == null || !Boolean.TRUE.equals(amount.isPositive())) {
 			throw new InvalidOperationException("Trying to create an invalid operation");
 		}
 		this.targetAccount = targetAccount;
@@ -30,7 +27,7 @@ public class Operation {
 		return type;
 	}
 	
-	public Float amount() {
+	public Amount amount() {
 		return amount;
 	}
 	
@@ -38,25 +35,48 @@ public class Operation {
 		return date;
 	}
 	
-	public Float newBalance() {
+	public Amount newBalance() {
 		return newBalance;
 	}
 	
-	public void execute() throws InsufficientFundsException {
-		int multiplier = type.equals(OperationType.DEPOSIT) ? 1 : -1;
-		Float nextBalance = this.targetAccount().balance() + multiplier * this.amount();
-		if(nextBalance < 0) {
+	public void execute() throws InsufficientFundsException, InvalidAmountException {
+		Amount nextBalance = type.equals(OperationType.DEPOSIT) 
+				? this.targetAccount().balance().add(this.amount)
+				: this.targetAccount().balance().subtract(this.amount);
+		if(!Boolean.TRUE.equals(nextBalance.isPositive())) {
 			throw new InsufficientFundsException(
 					String.format(
-							"Trying to withdraw %.2f but current account balance is only %.2f",
-							amount,
+							"Trying to withdraw %s but current account balance is only %s",
+							amount.toString(),
 							this.targetAccount().balance()
 						)
 					);
 		}
-		this.targetAccount().modifyBalance(nextBalance);
+		if(type.equals(OperationType.DEPOSIT)) {
+			this.targetAccount().increaseBalance(this.amount);
+		}
+		else {
+			this.targetAccount().decreaseBalance(this.amount);
+		}
 		this.newBalance = nextBalance;
 		this.date = new Date();
 		this.targetAccount().operations().add(this);
+	}
+	
+	public String toString() {
+		if(date == null) {
+			return String.format(
+					"NOT YET EXECUTED | %s | %s |",
+					type.toString(),
+					amount.toString()
+				);
+		}
+		return String.format(
+				"%s | %s | %s | %s",
+				date.toString(),
+				type.toString(),
+				amount.toString(),
+				newBalance.toString()
+			);
 	}
 }

@@ -1,4 +1,4 @@
-package com.societe.generale.bank.account.kata.exception;
+package com.societe.generale.bank.account.kata.model;
 
 public class InsufficientFundsException extends Exception{
 	

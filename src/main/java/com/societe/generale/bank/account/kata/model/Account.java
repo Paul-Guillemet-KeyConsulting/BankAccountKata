@@ -1,21 +1,20 @@
 package com.societe.generale.bank.account.kata.model;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.societe.generale.bank.account.kata.exception.InsufficientFundsException;
-import com.societe.generale.bank.account.kata.exception.InvalidOperationException;
+import java.util.stream.Collectors;
 
 
-public class Account {
+public class Account implements Historisable{
 	private Client owner;
-	private Float balance;
+	private Amount balance;
 	private List<Operation> operations; 
 	
-	public Account(Client owner) {
+	public Account(Client owner) throws InvalidAmountException {
 		super();
 		this.owner = owner;
-		this.balance = 0f;
+		this.balance = new Amount(new BigDecimal(0));
 		this.operations = new ArrayList<>();
 	}
 
@@ -23,7 +22,7 @@ public class Account {
 		return owner;
 	}
 	
-	public Float balance() {
+	public Amount balance() {
 		return balance;
 	}
 	
@@ -31,15 +30,29 @@ public class Account {
 		return operations;
 	}
 	
-	public void modifyBalance(Float newBalance) {
-		balance = newBalance;
+	public void increaseBalance(Amount amount) throws InvalidAmountException {
+		balance = balance.add(amount);
 	}
 	
-	public void deposit(Float amount) throws InsufficientFundsException, InvalidOperationException {
+	public void decreaseBalance(Amount amount) throws InvalidAmountException {
+		balance = balance.subtract(amount);
+	}
+	
+	public void deposit(Amount amount) throws InsufficientFundsException, InvalidOperationException, InvalidAmountException {
 		new Operation(this, amount, OperationType.DEPOSIT).execute();
 	}
 	
-	public void withdraw(Float amount) throws InsufficientFundsException, InvalidOperationException {
+	public void withdraw(Amount amount) throws InsufficientFundsException, InvalidOperationException, InvalidAmountException {
 		new Operation(this, amount, OperationType.WITHDRAWAL).execute();
+	}
+	
+	public String getOperationHistoryAsString() {
+		return operations().stream()
+			.map(Operation::toString)
+			.collect(Collectors.joining("\n"));
+	}
+
+	public void printHistory() {
+		System.out.println(getOperationHistoryAsString());
 	}
 }

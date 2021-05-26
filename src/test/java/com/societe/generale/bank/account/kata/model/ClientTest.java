@@ -6,11 +6,9 @@ import org.junit.Test;
 public class ClientTest {
 
 	@Test
-	public void clientInstanciation() {
-		Client client  = new Client("Paul", "Guillemet");
-		Assert.assertEquals("Paul", client.firstName());
-		Assert.assertEquals("Guillemet", client.lastName());
+	public void shouldNotBeNullWhenInstanciated() {
+		Client client  = new Client();
+		Assert.assertNotNull(client);
 	}
-
 
 }
